@@ -5,7 +5,7 @@ import { SimplexNoise } from 'three/examples/jsm/Addons.js';
 const simplex = new SimplexNoise();
 const canvas = document.querySelector("#grid");
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 4000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
   antialias: true,
@@ -46,7 +46,7 @@ function sculpt(data, radius, noisefn) {
   }
 }
 
-const base_freq = 0.008;
+const base_freq = 0.01;
 const base_ampl = 20;
 const base_harm = 12;
 
@@ -56,33 +56,56 @@ const radius = 1000;
 const size = 128;
 const chunks = size * 4;
 
+const planet = new THREE.Group();
+
 const landMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0x2f4f4f,
-  specularColor: 0xffffff,
-  specularIntensity: 5
+  color: 0x228B22,
+  specularColor: 0x329B32,
+  specularIntensity: 3
 });
 const landGeometry = new THREE.BoxGeometry(size, size, size, chunks, chunks, chunks);
 sculpt(landGeometry.attributes.position.array, radius, noisy);
 landGeometry.computeVertexNormals();
-scene.add(new THREE.Mesh(landGeometry, landMaterial));
+planet.add(new THREE.Mesh(landGeometry, landMaterial));
 
 const seaMaterial = new THREE.MeshPhysicalMaterial({
   color: 0x123456,
-  opacity: 0.8,
+  opacity: 0.9,
   transparent: true,
   specularColor: 0x2f3f4f,
-  specularIntensity: 9
+  specularIntensity: 12
 });
 const seaGeometry = new THREE.BoxGeometry(size, size, size, chunks, chunks, chunks);
 makeSphere(seaGeometry.attributes.position.array, radius);
 seaGeometry.computeVertexNormals();
-scene.add(new THREE.Mesh(seaGeometry, seaMaterial));
+planet.add(new THREE.Mesh(seaGeometry, seaMaterial));
 
+scene.add(planet);
+
+const moon = new THREE.Group();
+const scale = 4;
+
+const moonMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x393939,
+  specularColor: 0x999999,
+  specularIntensity: 3
+});
+const moonGeometry = new THREE.BoxGeometry(size / scale, size / scale, size / scale, chunks / scale, chunks / scale, chunks / scale);
+sculpt(moonGeometry.attributes.position.array, radius / scale, noisy);
+moonGeometry.computeVertexNormals();
+moon.add(new THREE.Mesh(moonGeometry, moonMaterial));
+moon.position.set(radius * 2.5, 0, 0);
+
+const moonOrbit = new THREE.Group();
+moonOrbit.add(moon);
+scene.add(moonOrbit);
 
 const sun = new THREE.PointLight(0xffffff, 100000000);
-sun.position.set(-50, 5000, 1000);
+sun.position.set(-5000, -1000, 1000);
 scene.add(sun);
 
 function animate() {
+  moonOrbit.rotation.y += 0.005;
+  planet.rotation.y += 0.001;
   renderer.render(scene, camera);
 }
